@@ -23,17 +23,17 @@ L = {
         "wallet_input": "📍 أدخل عنوان محفظتك للتحقق:",
         "btn_enter": "🚀 دخول المنصة",
         "btn_buy": "💳 شراء $RAL الآن",
-        "err_bal": "⚠️ رصيدك غير كافٍ. تحتاج إلى 1000 قطعة.",
+        "err_bal": "⚠️ رصيدك غير كافٍ أو العنوان خاطئ. تحتاج إلى 1000 قطعة.",
         "welcome": "✅ أهلاً بك في لوحة تحليلات ROON AL",
         "side_header": "إعدادات التحليل",
-        "search_label": "🔍 ابحث عن عملة:",
+        "search_label": "🔍 ابحث عن عملة (رمز أو اسم):",
         "days_label": "الفترة الزمنية (أيام):",
         "logout": "تسجيل الخروج",
         "price_label": "سعر",
         "rsi_label": "مؤشر RSI",
         "chart_price": "حركة السعر",
         "chart_rsi": "مؤشر القوة النسبية RSI",
-        "err_coin": "اكتب اسم العملة بشكل صحيح للبدء في التحليل.",
+        "err_coin": "يرجى كتابة رمز العملة بشكل صحيح (مثال: BTC, ETH, KAS).",
         "dev_by": "تم التطوير بواسطة إياد سامي © 2026",
         "dir": "rtl"
     },
@@ -46,14 +46,14 @@ L = {
         "err_bal": "⚠️ Insufficient balance. You need 1,000 tokens.",
         "welcome": "✅ Welcome to ROON AL Analytics Dashboard",
         "side_header": "Analysis Settings",
-        "search_label": "🔍 Search for a coin:",
+        "search_label": "🔍 Search for a coin (Symbol or Name):",
         "days_label": "Time Period (days):",
         "logout": "Logout",
         "price_label": "Price",
         "rsi_label": "RSI Indicator",
         "chart_price": "Price Movement",
         "chart_rsi": "Relative Strength Index (RSI)",
-        "err_coin": "Type the coin name correctly to start analysis.",
+        "err_coin": "Please type the coin symbol correctly (e.g., BTC, ETH, KAS).",
         "dev_by": "Developed by Ayad Sami © 2026",
         "dir": "ltr"
     }
@@ -76,10 +76,10 @@ with col_logo2:
     try:
         st.image("logo.jpg", width=300)
     except:
-        st.warning("Warning: logo.jpg not found.")
+        st.info("Logo image will appear here.")
 
-st.markdown(f"<h1 style='text-align: center; color: #FFD700;'>{L[lang]['title']}</h1>", unsafe_allow_html=True)
-st.markdown(f"<p style='text-align: center; font-size: 18px;'>{L[lang]['access_text']}</p>", unsafe_allow_html=True)
+st.markdown(f<h1 style='text-align: center; color: #FFD700;'>{L[lang]['title']}</h1>, unsafe_allow_html=True)
+st.markdown(f<p style='text-align: center; font-size: 18px;'>{L[lang]['access_text']}</p>, unsafe_allow_html=True)
 st.markdown("---")
 
 # --- نظام التحقق والدخول ---
@@ -99,8 +99,9 @@ if not st.session_state['access_granted']:
                 st.link_button(L[lang]['btn_buy'], BUY_URL, use_container_width=True, type="primary")
 
     def check_access(wallet_address):
+        # التحقق إذا كانت محفظة الأدمن (إياد) لتسهيل الدخول
         if wallet_address.lower() == ADMIN_WALLET.lower():
-            return True, 0
+            return True, 999999
         try:
             w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
             abi = '[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}]'
@@ -124,15 +125,19 @@ if not st.session_state['access_granted']:
 if st.session_state['access_granted']:
     st.success(L[lang]['welcome'])
     
+    # دقيقة البحث المحدثة للتعرف على الرموز
     def get_coin_id(query):
         try:
-            res = requests.get(f"https://api.coingecko.com/api/v3/search?query={query}").json()
-            return res['coins'][0]['id'] if res['coins'] else query.lower()
+            # نقوم بالبحث عن الرمز أولاً لتحويله إلى معرف CoinGecko
+            search_res = requests.get(f"https://api.coingecko.com/api/v3/search?query={query}").json()
+            if search_res['coins']:
+                return search_res['coins'][0]['id']
+            return query.lower()
         except: return query.lower()
 
     with st.sidebar:
         st.header(L[lang]['side_header'])
-        coin_search = st.text_input(L[lang]['search_label'], "bitcoin")
+        coin_search = st.text_input(L[lang]['search_label'], "BTC")
         days_count = st.slider(L[lang]['days_label'], 7, 90, 30)
         if st.button(L[lang]['logout']):
             st.session_state['access_granted'] = False
@@ -140,12 +145,14 @@ if st.session_state['access_granted']:
 
     try:
         coin_id = get_coin_id(coin_search)
-        url = f"https://api.coingecko.com/api/v3/coins/{cid}/market_chart" # Note: cid was missing in your snippet, corrected to coin_id
-        res = requests.get(f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart", params={'vs_currency': 'usd', 'days': days_count, 'interval': 'daily'}).json()
+        # تصحيح الخطأ البرمجي هنا باستخدام coin_id بدلاً من cid
+        res = requests.get(f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart", 
+                           params={'vs_currency': 'usd', 'days': days_count, 'interval': 'daily'}).json()
         
         df = pd.DataFrame(res['prices'], columns=['timestamp', 'price'])
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
 
+        # حساب RSI
         delta = df['price'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
@@ -155,6 +162,7 @@ if st.session_state['access_granted']:
         c1.metric(f"{L[lang]['price_label']} {coin_id.upper()}", f"${df['price'].iloc[-1]:,.2f}")
         c2.metric(L[lang]['rsi_label'], f"{df['RSI'].iloc[-1]:.2f}")
 
+        # رسم الشارت
         fig_p = go.Figure(go.Scatter(x=df['timestamp'], y=df['price'], name="Price", line=dict(color='#00ffcc')))
         fig_p.update_layout(template="plotly_dark", title=L[lang]['chart_price'])
         st.plotly_chart(fig_p, use_container_width=True)
@@ -168,4 +176,4 @@ if st.session_state['access_granted']:
         st.info(L[lang]['err_coin'])
 
 st.markdown("---")
-st.markdown(f"<p style='text-align: center;'>{L[lang]['dev_by']}</p>", unsafe_allow_html=True)
+st.markdown(f<p style='text-align: center;'>{L[lang]['dev_by']}</p>, unsafe_allow_html=True)

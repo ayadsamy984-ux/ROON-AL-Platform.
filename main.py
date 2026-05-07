@@ -4,173 +4,90 @@ import pandas as pd
 import plotly.graph_objects as go
 from web3 import Web3
 
-# 1. إعدادات الصفحة الاحترافية
-st.set_page_config(page_title="ROON AL", page_icon="💹", layout="wide")
+# 1. إعدادات الصفحة
+st.set_page_config(page_title="ROON AL Platform", page_icon="💹", layout="wide")
 
-# --- نظام اختيار اللغة ---
 if 'lang' not in st.session_state:
     st.session_state['lang'] = "العربية"
 
 with st.sidebar:
-    st.session_state['lang'] = st.radio("Select Language / اختر اللغة", ["العربية", "English"])
+    st.session_state['lang'] = st.radio("Language", ["العربية", "English"])
     st.markdown("---")
 
-# قاموس اللغات للنصوص
 L = {
     "العربية": {
-        "title": "ROON AL",
-        "access_text": "(الحد الأدنى: 1,000 قطعة) $RAL حصري لمستثمري",
-        "wallet_input": "📍 أدخل عنوان محفظتك للتحقق:",
-        "btn_enter": "🚀 دخول المنصة",
-        "btn_buy": "💳 شراء $RAL الآن",
-        "err_bal": "⚠️ رصيدك غير كافٍ أو العنوان خاطئ. تحتاج إلى 1000 قطعة.",
-        "welcome": "✅ أهلاً بك في لوحة تحليلات ROON AL",
-        "side_header": "إعدادات التحليل",
-        "search_label": "🔍 ابحث عن عملة (رمز أو اسم):",
-        "days_label": "الفترة الزمنية (أيام):",
-        "logout": "تسجيل الخروج",
-        "price_label": "سعر",
-        "rsi_label": "مؤشر RSI",
-        "chart_price": "حركة السعر",
-        "chart_rsi": "مؤشر القوة النسبية RSI",
-        "err_coin": "يرجى كتابة رمز العملة بشكل صحيح (مثال: BTC, ETH, KAS).",
-        "dev_by": "تم التطوير بواسطة إياد سامي © 2026",
-        "dir": "rtl"
+        "title": "ROON AL Analytics",
+        "search_label": "🔍 ابحث (BTC, ETH, KAS, SOL):",
+        "err_coin": "❌ لم يتم العثور على بيانات لهذه العملة حالياً. حاول كتابة الاسم كاملاً أو انتظر دقيقة.",
+        "welcome": "✅ أهلاً بك في المنصة",
+        "price": "السعر الحالي",
+        "dev": "تم التطوير بواسطة إياد سامي © 2026"
     },
     "English": {
-        "title": "ROON AL",
-        "access_text": "Exclusive for $RAL investors (Min: 1,000 tokens)",
-        "wallet_input": "📍 Enter your wallet address for verification:",
-        "btn_enter": "🚀 Enter Platform",
-        "btn_buy": "💳 Buy $RAL Now",
-        "err_bal": "⚠️ Insufficient balance. You need 1,000 tokens.",
-        "welcome": "✅ Welcome to ROON AL Analytics Dashboard",
-        "side_header": "Analysis Settings",
-        "search_label": "🔍 Search for a coin (Symbol or Name):",
-        "days_label": "Time Period (days):",
-        "logout": "Logout",
-        "price_label": "Price",
-        "rsi_label": "RSI Indicator",
-        "chart_price": "Price Movement",
-        "chart_rsi": "Relative Strength Index (RSI)",
-        "err_coin": "Please type the coin symbol correctly (e.g., BTC, ETH, KAS).",
-        "dev_by": "Developed by Ayad Sami © 2026",
-        "dir": "ltr"
+        "title": "ROON AL Analytics",
+        "search_label": "🔍 Search (BTC, ETH, KAS, SOL):",
+        "err_coin": "❌ Data not found. Try the full name or wait a minute.",
+        "welcome": "✅ Welcome to Platform",
+        "price": "Current Price",
+        "dev": "Developed by Ayad Sami © 2026"
     }
 }
 
 lang = st.session_state['lang']
 
-# ستايل يدعم اتجاه اللغة
-st.markdown(f"<style>.stApp {{ direction: {L[lang]['dir']}; }}</style>", unsafe_allow_html=True)
-
-# --- بيانات المشروع الخاصة بك ---
-CONTRACT_ADDRESS = "0x881D12E3a4d32f3df439EF0F73546A9a67004723" 
-ADMIN_WALLET = "0x83b3864a8DdbF6F8eB666C66F11FA01d75eDE156"
-BUY_URL = "https://thirdweb.com/binance/0x881D12E3a4d32f3df439EF0F73546A9a67004723"
-MIN_TOKENS = 1000
-
-# 2. عرض الواجهة (الشعار والاسم)
-col_logo1, col_logo2, col_logo3 = st.columns([1, 1, 1])
-with col_logo2:
-    try:
-        st.image("logo.jpg", width=300)
-    except:
-        st.info("Logo image will appear here.")
-
-# --- تصحيح علامات التنصيص المفقودة هنا ---
-st.markdown(f"<h1 style='text-align: center; color: #FFD700;'>{L[lang]['title']}</h1>", unsafe_allow_html=True)
-st.markdown(f"<p style='text-align: center; font-size: 18px;'>{L[lang]['access_text']}</p>", unsafe_allow_html=True)
-st.markdown("---")
-
-# --- نظام التحقق والدخول ---
-if 'access_granted' not in st.session_state:
-    st.session_state['access_granted'] = False
-
-if not st.session_state['access_granted']:
-    with st.container():
-        col_a, col_b, col_c = st.columns([1, 2, 1])
-        with col_b:
-            user_wallet = st.text_input(L[lang]['wallet_input'], placeholder="0x...")
-            
-            btn_col1, btn_col2 = st.columns(2)
-            with btn_col1:
-                check_button = st.button(L[lang]['btn_enter'], use_container_width=True)
-            with btn_col2:
-                st.link_button(L[lang]['btn_buy'], BUY_URL, use_container_width=True, type="primary")
-
-    def check_access(wallet_address):
-        if wallet_address.lower() == ADMIN_WALLET.lower():
-            return True, 999999
-        try:
-            w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
-            abi = '[{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}]'
-            contract = w3.eth.contract(address=w3.to_checksum_address(CONTRACT_ADDRESS), abi=abi)
-            raw_balance = contract.functions.balanceOf(w3.to_checksum_address(wallet_address)).call()
-            decimals = contract.functions.decimals().call()
-            balance = raw_balance / (10**decimals)
-            return balance >= MIN_TOKENS, balance
-        except: return False, 0
-
-    if check_button and user_wallet:
-        is_allowed, current_bal = check_access(user_wallet)
-        if is_allowed:
-            st.balloons()
-            st.session_state['access_granted'] = True
-            st.rerun()
-        else:
-            st.error(L[lang]['err_bal'])
-
-# --- المحتوى المحمي ---
-if st.session_state['access_granted']:
-    st.success(L[lang]['welcome'])
+# --- تحسين دالة جلب معرف العملة (تجنب أخطاء CoinGecko) ---
+def get_coin_id_pro(query):
+    query = query.lower().strip()
+    # تحويل يدوي لأشهر العملات لضمان السرعة
+    manual_map = {
+        "btc": "bitcoin", "eth": "ethereum", "kas": "kaspa", 
+        "sol": "solana", "bnb": "binancecoin", "ada": "cardano",
+        "xrp": "ripple", "dot": "polkadot", "trx": "tron"
+    }
+    if query in manual_map:
+        return manual_map[query]
     
-    def get_coin_id(query):
-        try:
-            search_res = requests.get(f"https://api.coingecko.com/api/v3/search?query={query}").json()
-            if search_res['coins']:
-                return search_res['coins'][0]['id']
-            return query.lower()
-        except: return query.lower()
-
-    with st.sidebar:
-        st.header(L[lang]['side_header'])
-        coin_search = st.text_input(L[lang]['search_label'], "BTC")
-        days_count = st.slider(L[lang]['days_label'], 7, 90, 30)
-        if st.button(L[lang]['logout']):
-            st.session_state['access_granted'] = False
-            st.rerun()
-
     try:
-        coin_id = get_coin_id(coin_search)
-        # تصحيح الخطأ البرمجي هنا باستخدام coin_id بدلاً من cid
-        res = requests.get(f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart", 
-                           params={'vs_currency': 'usd', 'days': days_count, 'interval': 'daily'}).json()
-        
-        df = pd.DataFrame(res['prices'], columns=['timestamp', 'price'])
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-
-        delta = df['price'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-        df['RSI'] = 100 - (100 / (1 + (gain/loss)))
-
-        c1, c2 = st.columns(2)
-        c1.metric(f"{L[lang]['price_label']} {coin_id.upper()}", f"${df['price'].iloc[-1]:,.2f}")
-        c2.metric(L[lang]['rsi_label'], f"{df['RSI'].iloc[-1]:.2f}")
-
-        fig_p = go.Figure(go.Scatter(x=df['timestamp'], y=df['price'], name="Price", line=dict(color='#00ffcc')))
-        fig_p.update_layout(template="plotly_dark", title=L[lang]['chart_price'])
-        st.plotly_chart(fig_p, use_container_width=True)
-
-        fig_r = go.Figure(go.Scatter(x=df['timestamp'], y=df['RSI'], name="RSI", line=dict(color='orange')))
-        fig_r.add_hline(y=70, line_dash="dot", line_color="red")
-        fig_r.add_hline(y=30, line_dash="dot", line_color="green")
-        fig_r.update_layout(template="plotly_dark", title=L[lang]['chart_rsi'], height=300)
-        st.plotly_chart(fig_r, use_container_width=True)
+        search_url = f"https://api.coingecko.com/api/v3/search?query={query}"
+        res = requests.get(search_url).json()
+        if res['coins']:
+            return res['coins'][0]['id']
     except:
-        st.info(L[lang]['err_coin'])
+        pass
+    return query
+
+# --- واجهة المستخدم ---
+st.title(L[lang]['title'])
+
+if 'access_granted' not in st.session_state:
+    st.session_state['access_granted'] = True # مفعل للتجربة حالياً
+
+if st.session_state['access_granted']:
+    with st.sidebar:
+        coin_input = st.text_input(L[lang]['search_label'], "BTC")
+        days = st.slider("Days", 7, 365, 30)
+
+    coin_id = get_coin_id_pro(coin_input)
+    
+    try:
+        # جلب البيانات
+        data_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+        params = {'vs_currency': 'usd', 'days': days, 'interval': 'daily'}
+        response = requests.get(data_url, params=params).json()
+        
+        if 'prices' in response:
+            df = pd.DataFrame(response['prices'], columns=['time', 'price'])
+            df['time'] = pd.to_datetime(df['time'], unit='ms')
+            
+            st.metric(f"{coin_id.upper()} {L[lang]['price']}", f"${df['price'].iloc[-1]:,.4f}")
+            
+            fig = go.Figure(go.Scatter(x=df['time'], y=df['price'], mode='lines', line=dict(color='#00ffcc')))
+            fig.update_layout(template="plotly_dark", title=f"{coin_id.title()} Chart")
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.error(L[lang]['err_coin'])
+    except:
+        st.error(L[lang]['err_coin'])
 
 st.markdown("---")
-# تصحيح علامات التنصيص في السطر الأخير
-st.markdown(f"<p style='text-align: center;'>{L[lang]['dev_by']}</p>", unsafe_allow_html=True)
+st.caption(L[lang]['dev'])

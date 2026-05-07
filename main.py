@@ -62,7 +62,7 @@ L = {
 lang = st.session_state['lang']
 
 # ستايل يدعم اتجاه اللغة
-st.markdown(f"""<style>.stApp {{ direction: {L[lang]['dir']}; }}</style>""", unsafe_allow_html=True)
+st.markdown(f"<style>.stApp {{ direction: {L[lang]['dir']}; }}</style>", unsafe_allow_html=True)
 
 # --- بيانات المشروع الخاصة بك ---
 CONTRACT_ADDRESS = "0x881D12E3a4d32f3df439EF0F73546A9a67004723" 
@@ -78,8 +78,9 @@ with col_logo2:
     except:
         st.info("Logo image will appear here.")
 
-st.markdown(f<h1 style='text-align: center; color: #FFD700;'>{L[lang]['title']}</h1>, unsafe_allow_html=True)
-st.markdown(f<p style='text-align: center; font-size: 18px;'>{L[lang]['access_text']}</p>, unsafe_allow_html=True)
+# --- تصحيح علامات التنصيص المفقودة هنا ---
+st.markdown(f"<h1 style='text-align: center; color: #FFD700;'>{L[lang]['title']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center; font-size: 18px;'>{L[lang]['access_text']}</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 # --- نظام التحقق والدخول ---
@@ -99,7 +100,6 @@ if not st.session_state['access_granted']:
                 st.link_button(L[lang]['btn_buy'], BUY_URL, use_container_width=True, type="primary")
 
     def check_access(wallet_address):
-        # التحقق إذا كانت محفظة الأدمن (إياد) لتسهيل الدخول
         if wallet_address.lower() == ADMIN_WALLET.lower():
             return True, 999999
         try:
@@ -125,10 +125,8 @@ if not st.session_state['access_granted']:
 if st.session_state['access_granted']:
     st.success(L[lang]['welcome'])
     
-    # دقيقة البحث المحدثة للتعرف على الرموز
     def get_coin_id(query):
         try:
-            # نقوم بالبحث عن الرمز أولاً لتحويله إلى معرف CoinGecko
             search_res = requests.get(f"https://api.coingecko.com/api/v3/search?query={query}").json()
             if search_res['coins']:
                 return search_res['coins'][0]['id']
@@ -152,7 +150,6 @@ if st.session_state['access_granted']:
         df = pd.DataFrame(res['prices'], columns=['timestamp', 'price'])
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
 
-        # حساب RSI
         delta = df['price'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
@@ -162,7 +159,6 @@ if st.session_state['access_granted']:
         c1.metric(f"{L[lang]['price_label']} {coin_id.upper()}", f"${df['price'].iloc[-1]:,.2f}")
         c2.metric(L[lang]['rsi_label'], f"{df['RSI'].iloc[-1]:.2f}")
 
-        # رسم الشارت
         fig_p = go.Figure(go.Scatter(x=df['timestamp'], y=df['price'], name="Price", line=dict(color='#00ffcc')))
         fig_p.update_layout(template="plotly_dark", title=L[lang]['chart_price'])
         st.plotly_chart(fig_p, use_container_width=True)
@@ -176,4 +172,5 @@ if st.session_state['access_granted']:
         st.info(L[lang]['err_coin'])
 
 st.markdown("---")
-st.markdown(f<p style='text-align: center;'>{L[lang]['dev_by']}</p>, unsafe_allow_html=True)
+# تصحيح علامات التنصيص في السطر الأخير
+st.markdown(f"<p style='text-align: center;'>{L[lang]['dev_by']}</p>", unsafe_allow_html=True)
